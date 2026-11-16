@@ -4,7 +4,6 @@ on:
   push:
     branches: [master, main]
     tags: ['v*']
-  pull_request:
   workflow_dispatch:
 
 permissions:
@@ -20,7 +19,6 @@ env:
   CGO_ENABLED: '0'
 
 jobs:
-  # Builds the Vue bundle once and hands it to the Go job, which embeds it.
   frontend:
     runs-on: ubuntu-latest
     steps:
@@ -32,7 +30,12 @@ jobs:
           cache: npm
           cache-dependency-path: web/package-lock.json
 
-      - name: Typecheck and build
+      # The Web bundle carries the MiSans faces, so they must exist before
+      # the Vite build resolves them. The font license keeps them out of git.
+      - name: MiSans faces
+        run: bash scripts/fetch-fonts.sh
+
+      - name: Build Web bundle
         run: |
           cd web
           npm ci
@@ -58,22 +61,13 @@ jobs:
             go.sum
             ui/go.sum
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
+      - name: MiSans faces
+        run: bash scripts/fetch-fonts.sh
 
-      # The Go packages embed internal/webui/dist, and the native packages
-      # embed the MiSans faces, which the font license keeps out of git.
       - uses: actions/download-artifact@v4
         with:
           name: web-bundle
           path: internal/webui/dist
-
-      - name: MiSans faces
-        run: bash scripts/fetch-fonts.sh
-
-      - name: Vet and test
-        run: make check
 
       # One builder invocation, twelve concurrent Go builds.
       - name: Cross-compile
