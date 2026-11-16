@@ -3,10 +3,16 @@
 根据 Google Photos 安卓端协议实现的网盘工具
 提供独立的 Web 与 MyGo 原生界面
 
+| 文件列表 | 设置 |
+| --- | --- |
+| ![文件列表](docs/screenshots/1.jpg) | ![设置](docs/screenshots/2.jpg) |
+
 ## 特性
-    - 模拟Pixel XL无限容量
-    - 支持伪装BMP/MP4来实现任意文件上传
-    - 使用Sqlite3来实现文件系统映射
+
+- 模拟 Pixel XL 无限容量
+- 支持伪装 BMP/MP4 来实现任意文件上传
+- 使用 SQLite 来实现文件系统映射
+
 ## 启动
 
 | 程序 | 界面 |
