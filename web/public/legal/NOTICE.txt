@@ -1,0 +1,8 @@
+guludrive uses unmodified MiSans Version 4.009 (Regular, Medium and Bold).
+Copyright © 2020-2025 Beijing Xiaomi Mobile Software Co.,Ltd. All Rights Reserved.
+Source: https://hyperos.mi.com/font-download/MiSans.zip
+License: MiSans字体知识产权许可协议.pdf
+Official license: https://hyperos.mi.com/font-download/MiSans字体知识产权许可协议.pdf
+
+Retain this notice and the original license with applications containing these fonts.
+The MiSans license prohibits adaptation/redevelopment and standalone font redistribution.

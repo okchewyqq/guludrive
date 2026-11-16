@@ -1,0 +1,15 @@
+# Build products
+/dist/
+/internal/webui/dist/
+
+# Private runtime data, never committed
+/instance.lock
+/temp/
+store.db
+store.db-*
+
+# Unmodified MiSans faces, fetched once with scripts/fetch-fonts.ps1|.sh.
+# The license forbids redistributing the font on its own, so the repository
+# carries only the notice and the original license text.
+/assets/fonts/*.ttf
+/assets/fonts/*.woff2
