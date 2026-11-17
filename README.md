@@ -75,3 +75,6 @@ Vue、Vite、Lucide 及其余依赖各自遵循其许可。
 - 谷歌相册协议：[gotohp](https://github.com/xob0t/gotohp)、[gpmc](https://github.com/xob0t/gpmc)
 - 谷歌优选：[gdirect](https://github.com/mizorewww/gdirect)
 - 原生UI实现：[mygo](https://github.com/egoist/mygo)
+
+## 鸣谢
+- 开源宣传：[linux.do](https://linux.do)
