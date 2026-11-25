@@ -1,0 +1,130 @@
+diff --git a/internal/photos/client.go b/internal/photos/client.go
+--- a/internal/photos/client.go
++++ b/internal/photos/client.go
+@@ -423,3 +423,4 @@
+ 	if reason != "" {
++		fmt.Printf("GULUDRIVE_COMMIT_PROTO status=%d raw_len=%d fields=%s\n", result.status, len(result.raw), summarizeProtoFields(result.raw))
+ 		return empty, operationFailure("commit_upload", result, &core.RemoteError{Stage: "decode_media_id", Reason: reason}, true)
+ 	}
+diff --git a/internal/photos/wire_debug.go b/internal/photos/wire_debug.go
+new file mode 100644
+--- /dev/null
++++ b/internal/photos/wire_debug.go
+@@ -0,0 +1,82 @@
++package photos
++
++import (
++	"fmt"
++	"strings"
++	"unicode"
++	"unicode/utf8"
++
++	"google.golang.org/protobuf/encoding/protowire"
++)
++
++// summarizeProtoFields reports protobuf field paths and wire types without
++// logging the full response. Long UTF-8 values are masked so media identifiers
++// can be recognized without exposing their complete values in service logs.
++func summarizeProtoFields(raw []byte) string {
++	const (
++		maxDepth  = 8
++		maxFields = 128
++		maxOutput = 4096
++	)
++	if len(raw) == 0 {
++		return "empty"
++	}
++
++	var entries []string
++	seen := 0
++	var walk func([]byte, string, int)
++	walk = func(data []byte, prefix string, depth int) {
++		if depth > maxDepth || seen >= maxFields {
++			return
++		}
++		fs, err := fields(data)
++		if err != nil {
++			return
++		}
++		for _, f := range fs {
++			if seen >= maxFields {
++				return
++			}
++			seen++
++			path := fmt.Sprintf("%s%d", prefix, f.num)
++			switch f.typ {
++			case protowire.BytesType:
++				if len(f.bytes) == 0 {
++					entries = append(entries, path+"=bytes(0)")
++					continue
++				}
++				if printableProtoText(f.bytes) {
++					value := "<redacted>"
++					s := string(f.bytes)
++					if len(s) >= 24 {
++						value = s[:8] + "..." + s[len(s)-4:]
++					}
++					entries = append(entries, fmt.Sprintf("%s=text(len=%d,value=%s)", path, len(f.bytes), value))
++					continue
++				}
++				entries = append(entries, fmt.Sprintf("%s=bytes(len=%d)", path, len(f.bytes)))
++				walk(f.bytes, path+".", depth+1)
++			case protowire.VarintType:
++				entries = append(entries, fmt.Sprintf("%s=varint(%d)", path, f.value))
++			case protowire.Fixed32Type:
++				entries = append(entries, path+"=fixed32")
++			case protowire.Fixed64Type:
++				entries = append(entries, path+"=fixed64")
++			}
++		}
++	}
++
++	walk(raw, "", 0)
++	if len(entries) == 0 {
++		return "unparsed"
++	}
++	result := strings.Join(entries, ";")
++	if len(result) > maxOutput {
++		result = result[:maxOutput] + "...(truncated)"
++	}
++	return result
++}
++
++func printableProtoText(b []byte) bool {
++	if !utf8.Valid(b) {
++		return false
++	}
++	for _, r := range string(b) {
++		if unicode.IsControl(r) {
++			return false
++		}
++	}
++	return true
++}
+diff --git a/internal/photos/wire_debug_test.go b/internal/photos/wire_debug_test.go
+new file mode 100644
+--- /dev/null
++++ b/internal/photos/wire_debug_test.go
+@@ -0,0 +1,20 @@
++package photos
++
++import (
++	"strings"
++	"testing"
++)
++
++func TestSummarizeProtoFieldsReportsPathAndMasksLongText(t *testing.T) {
++	const mediaID = "AF1QipMXMjsHj_w9NkEtvYAsqF4IL4aQxJ5UAEKFULYu"
++	raw := blob(1, blob(3, str(2, mediaID)))
++
++	got := summarizeProtoFields(raw)
++	if !strings.Contains(got, "1.3.2=text(") {
++		t.Fatalf("field path missing from summary: %s", got)
++	}
++	if strings.Contains(got, mediaID) {
++		t.Fatalf("summary must not expose the full media ID: %s", got)
++	}
++	if !strings.Contains(got, "AF1QipMX...ULYu") {
++		t.Fatalf("masked media ID not useful for recognition: %s", got)
++	}
++}
