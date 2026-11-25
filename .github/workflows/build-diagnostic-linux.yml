@@ -1,0 +1,60 @@
+name: GuluDrive diagnostic Linux build
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - "diagnose/**"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: guludrive-diagnostic-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-linux-amd64:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout fork
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Set up Go
+        uses: actions/setup-go@v7
+        with:
+          go-version: "1.27.3"
+          cache-dependency-path: go.sum
+
+      - name: Fetch licensed MiSans font files
+        run: bash scripts/fetch-fonts.sh
+
+      - name: Build embedded Web assets
+        run: make web
+
+      - name: Run project checks
+        run: make check
+
+      - name: Build Linux amd64 Web-only binary
+        run: make no-ui-linux-amd64
+
+      - name: Create checksum
+        run: sha256sum dist/guludrive-no-ui-linux-amd64 | tee dist/SHA256SUMS
+
+      - name: Upload Linux binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: guludrive-no-ui-linux-amd64-diagnostic
+          path: |
+            dist/guludrive-no-ui-linux-amd64
+            dist/SHA256SUMS
+          if-no-files-found: error
+          retention-days: 14
